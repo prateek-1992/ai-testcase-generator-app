@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ApiKeyProvider } from "@/contexts/ApiKeyContext";
 
 export const metadata: Metadata = {
   title: "Test Case Generator",
@@ -13,7 +14,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ApiKeyProvider>{children}</ApiKeyProvider>
+      </body>
     </html>
   );
 }

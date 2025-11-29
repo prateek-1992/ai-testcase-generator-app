@@ -10,6 +10,7 @@ import { callLLMClient } from "@/lib/providers/client";
 import { generatePrdSummaryPrompt, generateTestCasePrompt } from "@/lib/prompt";
 import { parseTestCasesFromLLM } from "@/lib/utils/parseLLMResponse";
 import { normalizeTestCases } from "@/lib/utils/normalizeTestCase";
+import { useApiKey } from "@/contexts/ApiKeyContext";
 
 type Provider = "openai" | "azure" | "ollama" | "gemini";
 
@@ -23,6 +24,7 @@ type WorkflowStep =
 
 export default function UploadPage() {
   const router = useRouter();
+  const { setProviderConfig } = useApiKey();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [provider, setProvider] = useState<Provider>("openai");
@@ -61,6 +63,9 @@ export default function UploadPage() {
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
   const [showAzureKey, setShowAzureKey] = useState(false);
   const [showGeminiKey, setShowGeminiKey] = useState(false);
+
+  // No localStorage loading - keys only exist in React state during session
+  // This ensures keys are cleared when page is refreshed/closed (better security)
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -110,19 +115,15 @@ export default function UploadPage() {
   };
 
   /**
-   * Gets provider config, prioritizing localStorage (for security and persistence)
-   * Falls back to form state if not in localStorage
+   * Gets provider config from form state (what user sees and can edit)
+   * Keys only exist in React state - not persisted to localStorage for security
    */
   const getProviderConfig = () => {
     switch (provider) {
       case "openai": {
-        // Check localStorage first (persisted from previous sessions)
-        const storedKey = localStorage.getItem("apiKey_openai");
-        const storedModel = localStorage.getItem("model_openai");
-        
         return {
-          apiKey: storedKey ? deobfuscateKey(storedKey) : openaiApiKey, // Use stored key or current form input
-          model: storedModel || openaiModel,
+          apiKey: openaiApiKey, // Use current form input (React state only)
+          model: openaiModel,
         };
       }
       case "azure":
@@ -133,22 +134,15 @@ export default function UploadPage() {
           apiVersion: azureApiVersion,
         };
       case "ollama": {
-        const storedBaseUrl = localStorage.getItem("baseUrl_ollama");
-        const storedModel = localStorage.getItem("model_ollama");
-        
         return {
-          baseUrl: storedBaseUrl || ollamaBaseUrl,
-          model: storedModel || ollamaModel,
+          baseUrl: ollamaBaseUrl, // Use current form input (React state only)
+          model: ollamaModel,
         };
       }
       case "gemini": {
-        // Check localStorage first (persisted from previous sessions)
-        const storedKey = localStorage.getItem("apiKey_gemini");
-        const storedModel = localStorage.getItem("model_gemini");
-        
         return {
-          apiKey: storedKey ? deobfuscateKey(storedKey) : geminiApiKey, // Use stored key or current form input
-          model: storedModel || geminiModel,
+          apiKey: geminiApiKey, // Use current form input (React state only)
+          model: geminiModel,
         };
       }
     }
@@ -286,39 +280,22 @@ export default function UploadPage() {
       // Step 6: Complete
       setWorkflowStep("complete");
 
-      // Store in sessionStorage to pass data
+      // Store test cases and summary in sessionStorage (non-sensitive data)
       sessionStorage.setItem("testCases", JSON.stringify(testCases));
       if (summaryText) {
         sessionStorage.setItem("prdSummary", JSON.stringify({ text: summaryText }));
       }
       
-      // Store API keys in localStorage (persists across sessions)
-      // Keys are obfuscated and only used client-side
-      if (config.apiKey) {
-        localStorage.setItem(
-          `apiKey_${provider}`,
-          obfuscateKey(config.apiKey)
-        );
-      }
-      if (config.model) {
-        localStorage.setItem(`model_${provider}`, config.model);
-      }
-      if (config.baseUrl) {
-        localStorage.setItem(`baseUrl_${provider}`, config.baseUrl);
-      }
-      
-      // Store provider config (without API key - key is in localStorage)
-      sessionStorage.setItem(
-        "providerConfig",
-        JSON.stringify({
-          provider,
-          config: {
-            model: config.model,
-            baseUrl: config.baseUrl,
-            // API key NOT stored here - retrieved from localStorage when needed
-          },
-        })
-      );
+      // Store provider config in React Context (memory only, NOT persisted)
+      // API key exists only in React state - cleared on page refresh
+      setProviderConfig(provider, {
+        apiKey: config.apiKey, // Store plain key in context (already in memory)
+        model: config.model,
+        baseUrl: config.baseUrl,
+        endpoint: config.endpoint,
+        deployment: config.deployment,
+        apiVersion: config.apiVersion,
+      });
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An error occurred. Please try again."
@@ -512,8 +489,9 @@ export default function UploadPage() {
                       </svg>
                       <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                         <p className="font-semibold mb-1">🔒 100% Secure</p>
-                        <p className="mb-2">Your API key is stored in your browser&apos;s localStorage and is <strong>never sent to our servers</strong>.</p>
+                        <p className="mb-2">Your API key exists only in memory during your session and is <strong>never sent to our servers</strong>.</p>
                         <p className="mb-2">LLM calls are made directly from your browser to OpenAI.</p>
+                        <p className="mb-2">Keys are cleared when you refresh or close the tab (maximum security).</p>
                         <p>We cannot see, log, or access your keys.</p>
                         <div className="absolute left-4 bottom-0 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
                       </div>
@@ -729,8 +707,9 @@ export default function UploadPage() {
                       </svg>
                       <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                         <p className="font-semibold mb-1">🔒 100% Secure</p>
-                        <p className="mb-2">Your API key is stored in your browser&apos;s localStorage and is <strong>never sent to our servers</strong>.</p>
+                        <p className="mb-2">Your API key exists only in memory during your session and is <strong>never sent to our servers</strong>.</p>
                         <p className="mb-2">LLM calls are made directly from your browser to Google Gemini.</p>
+                        <p className="mb-2">Keys are cleared when you refresh or close the tab (maximum security).</p>
                         <p>We cannot see, log, or access your keys.</p>
                         <div className="absolute left-4 bottom-0 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
                       </div>
@@ -880,8 +859,8 @@ export default function UploadPage() {
                   Your API keys are <strong>never sent to our servers</strong>.
                 </p>
                 <p>
-                  <strong>✅ Local Storage Only:</strong> Keys are stored in your browser&apos;s localStorage (encrypted/obfuscated) 
-                  and persist across sessions for convenience.
+                  <strong>✅ React Context (Memory Only):</strong> Keys are stored in React Context (in-memory state) and are <strong>never persisted</strong> to browser storage. 
+                  They are <strong>automatically cleared</strong> when you refresh the page or close the browser tab - maximum security with zero persistence.
                 </p>
                 <p>
                   <strong>✅ Zero Trust Required:</strong> Our backend (Vercel) never sees your keys. 

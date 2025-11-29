@@ -4,19 +4,18 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { TestCase, PrdSummary, TestCasePriority, TestCaseType } from "@/types/TestCase";
 import { downloadAsJSON, downloadAsCSV, downloadAsExcel } from "@/lib/downloadUtils";
-import { deobfuscateKey } from "@/lib/utils/encryption";
+import { useApiKey } from "@/contexts/ApiKeyContext";
 
 const ITEMS_PER_PAGE = 10;
 
 export default function ResultPage() {
   const router = useRouter();
+  const { provider, providerConfig } = useApiKey();
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [summary, setSummary] = useState<PrdSummary | null>(null);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
-  const [provider, setProvider] = useState<"openai" | "azure" | "ollama" | "gemini" | null>(null);
-  const [providerConfig, setProviderConfig] = useState<any>(null);
   const [refineOpen, setRefineOpen] = useState(false);
   const [refineTargetId, setRefineTargetId] = useState<string | null>(null);
   const [refineText, setRefineText] = useState("");
@@ -44,7 +43,6 @@ export default function ResultPage() {
   useEffect(() => {
     const stored = sessionStorage.getItem("testCases");
     const storedSummary = sessionStorage.getItem("prdSummary");
-    const storedProviderConfig = sessionStorage.getItem("providerConfig");
 
     if (!stored) {
       router.push("/upload");
@@ -68,23 +66,9 @@ export default function ResultPage() {
       }
     }
 
-    if (storedProviderConfig) {
-      try {
-        const parsedProvider = JSON.parse(storedProviderConfig) as {
-          provider: "openai" | "azure" | "ollama" | "gemini";
-          config: any;
-        };
-        setProvider(parsedProvider.provider);
-        // Deobfuscate API key if it was obfuscated
-        const config = { ...parsedProvider.config };
-        if (config.apiKey) {
-          config.apiKey = deobfuscateKey(config.apiKey);
-        }
-        setProviderConfig(config);
-      } catch (error) {
-        console.error("Failed to parse provider config:", error);
-      }
-    }
+    // Provider config is now available from React Context (memory only)
+    // If context is empty (e.g., page refresh), provider will be null
+    // User will need to go back to upload page to re-enter key
   }, [router]);
 
   // Filter and paginate test cases

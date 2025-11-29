@@ -50,7 +50,7 @@ Upload your PRD in PDF, DOCX, TXT, or MD format, and get structured test cases w
    - Enter your API key (OpenAI, Gemini, or use Ollama locally)
    - Generate test cases!
 
-**That's it!** No environment variables needed. API keys are stored securely in your browser.
+**That's it!** No environment variables needed. API keys exist only in React Context (memory) and are cleared on page refresh for maximum security.
 
 ## 📋 Prerequisites
 
@@ -152,24 +152,27 @@ docker exec -it ollama ollama pull llama3.1
 
 ### Client-Side Storage (Browser Only)
 
-The application uses **browser storage** to persist data locally:
+The application uses **browser storage** and **React Context** to manage data:
 
 **SessionStorage** (cleared when tab closes):
 - **`testCases`**: Array of generated test cases
 - **`prdSummary`**: PRD summary text
-- **`providerConfig`**: Selected provider configuration (without API keys)
 
-**LocalStorage** (persists across sessions):
-- **`apiKey_{provider}`**: API keys (encrypted/obfuscated) - e.g., `apiKey_openai`, `apiKey_gemini`
-- **`model_{provider}`**: Selected model names
-- **`baseUrl_{provider}`**: Ollama base URL (if used)
+**React Context** (memory only, cleared on page refresh):
+- **`providerConfig`**: Provider configuration including API keys
+- **`provider`**: Selected LLM provider (OpenAI, Gemini, Ollama, Azure)
+
+**Important**: API keys are **NOT** stored in localStorage or sessionStorage. They only exist in:
+1. **React Context** (in-memory state) - accessible across pages during the session
+2. **Cleared automatically** when you refresh the page or close the browser tab
 
 **Important Notes**:
 - ✅ All data stored **locally in your browser** only
 - ✅ Data is **never sent to our servers** (except file extraction)
 - ✅ API keys are **never stored on our backend**
+- ✅ API keys are **never persisted to browser storage** - only in React memory
+- ✅ API keys are **cleared on page refresh** - maximum security
 - ✅ SessionStorage data cleared when browser tab closes
-- ✅ LocalStorage data persists across browser sessions (convenient for repeated use)
 
 ### Why Client-Side Storage?
 
@@ -184,7 +187,7 @@ The application uses **browser storage** to persist data locally:
 To clear all stored data:
 1. **Browser Settings**: Clear site data for this domain
 2. **Manual**: Open browser DevTools → Application → Clear Storage
-3. **Keys Only**: Delete individual localStorage items via DevTools
+3. **API Keys**: Simply refresh the page - keys are automatically cleared (stored only in React Context memory)
 
 ### Limitations
 
@@ -192,6 +195,7 @@ To clear all stored data:
 - Not shared across devices/browsers
 - Limited by browser storage quotas (~5-10MB typically)
 - SessionStorage cleared when tab closes
+- **API keys cleared on page refresh** (by design for security)
 
 ## 📁 Project Structure
 
@@ -369,6 +373,8 @@ Click the **"Download"** button and choose:
 2. Check browser storage isn't full
 3. Don't close the browser tab (sessionStorage clears on tab close)
 
+**Note**: API keys are stored in React Context (memory only) and are automatically cleared on page refresh. This is by design for maximum security. You'll need to re-enter your API key if you refresh the page.
+
 ## 🔒 Security & Privacy
 
 ### 🛡️ Client-Side LLM Architecture (100% Secure)
@@ -383,7 +389,7 @@ This application uses **client-side LLM calls** - the industry standard for trus
 #### How It Works
 
 **✅ Your API keys NEVER leave your browser:**
-- Keys are stored in your browser's `localStorage` (encrypted/obfuscated)
+- Keys are stored in **React Context** (in-memory only, not persisted)
 - LLM API calls are made **directly from your browser** to the provider
 - Our backend (Vercel) **NEVER sees your API keys**
 - Keys are **NEVER sent to our servers**
@@ -404,10 +410,11 @@ This application uses **client-side LLM calls** - the industry standard for trus
 
 #### API Key Storage
 
-- **Location**: Browser `localStorage` (encrypted/obfuscated)
-- **Persistence**: Survives browser restarts (convenient for repeated use)
-- **Scope**: Only accessible by this website (same-origin policy)
-- **Removal**: Clear browser data or use browser's "Clear Site Data" feature
+- **Location**: React Context (in-memory only, **NOT** persisted to browser storage)
+- **Persistence**: **Cleared on page refresh** - maximum security
+- **Scope**: Only accessible within the React app during the session
+- **Removal**: Automatically cleared on page refresh or browser tab close
+- **Security**: Keys exist only in JavaScript memory, never written to disk
 
 #### Supported Providers
 
@@ -423,15 +430,15 @@ This application uses **client-side LLM calls** - the industry standard for trus
 #### Data Privacy
 
 **✅ What we DON'T store:**
-- ❌ API keys (never sent to our servers)
+- ❌ API keys (never sent to our servers, only in React Context memory)
 - ❌ PRD documents (only processed client-side)
-- ❌ Generated test cases (stored only in your browser)
+- ❌ Generated test cases (stored only in your browser's sessionStorage)
 - ❌ Usage analytics or tracking data
 
 **✅ What IS stored (locally in your browser):**
 - Test cases in `sessionStorage` (cleared when tab closes)
-- API keys in `localStorage` (encrypted, persists across sessions)
 - PRD summary in `sessionStorage` (temporary)
+- **API keys in React Context** (in-memory only, cleared on page refresh - NOT persisted)
 
 **✅ Where your data goes:**
 - **PRD content**: Only sent to the LLM provider you choose (OpenAI, Gemini, or Ollama)
@@ -444,7 +451,7 @@ This application uses **client-side LLM calls** - the industry standard for trus
 2. **Rotate Keys**: Periodically rotate your API keys
 3. **Use Rate Limits**: Set rate limits on your API keys if supported
 4. **Review Permissions**: Ensure API keys have minimal required permissions
-5. **Clear Storage**: Periodically clear browser storage if using shared devices
+5. **Refresh Page**: API keys are automatically cleared on page refresh (by design)
 
 #### Self-Hosting Option
 
@@ -463,7 +470,8 @@ For maximum control and security, you can self-host this application:
 
 ## 🚧 Known Limitations
 
-- **Session storage**: Test cases lost when browser tab closes (keys persist in localStorage)
+- **Session storage**: Test cases lost when browser tab closes
+- **API keys**: Cleared on page refresh (stored only in React Context memory)
 - **File size**: Large PDFs (>10MB) may take longer to process
 - **Token limits**: Very long PRDs may need to be split
 - **Ollama performance**: Depends on your machine's RAM and CPU
