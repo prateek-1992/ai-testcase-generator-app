@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { TestCase, PrdSummary, TestCasePriority, TestCaseType } from "@/types/TestCase";
 import { downloadAsJSON, downloadAsCSV, downloadAsExcel } from "@/lib/downloadUtils";
+import { deobfuscateKey } from "@/lib/utils/encryption";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -74,7 +75,12 @@ export default function ResultPage() {
           config: any;
         };
         setProvider(parsedProvider.provider);
-        setProviderConfig(parsedProvider.config);
+        // Deobfuscate API key if it was obfuscated
+        const config = { ...parsedProvider.config };
+        if (config.apiKey) {
+          config.apiKey = deobfuscateKey(config.apiKey);
+        }
+        setProviderConfig(config);
       } catch (error) {
         console.error("Failed to parse provider config:", error);
       }

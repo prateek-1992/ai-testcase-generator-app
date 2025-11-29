@@ -14,7 +14,7 @@ This guide covers various hosting options for the Test Case Generator applicatio
 - Automatic deployments from GitHub
 - Edge network for fast global access
 - Built-in CI/CD
-- Easy environment variable management
+- Simple deployment process
 
 **Cons**:
 - Serverless functions have timeout limits (10s on free tier, 60s on Pro)
@@ -39,9 +39,9 @@ This guide covers various hosting options for the Test Case Generator applicatio
    - Vercel auto-detects Next.js settings
    - Click "Deploy"
 
-3. **Configure Environment Variables** (Optional):
-   - In Vercel dashboard → Settings → Environment Variables
-   - Add any default API keys if needed
+3. **Deploy**:
+   - No environment variables needed - this app uses BYOK (Bring Your Own Key) model
+   - Users enter API keys directly in the browser UI
 
 **Pricing**: Free tier available, Pro starts at $20/month
 
@@ -57,7 +57,7 @@ This guide covers various hosting options for the Test Case Generator applicatio
 - Generous free tier ($5 credit/month)
 - Easy deployment from GitHub
 - Supports longer function timeouts
-- Simple environment variable setup
+- Simple deployment process
 - Good for development and production
 
 **Cons**:
@@ -74,8 +74,7 @@ This guide covers various hosting options for the Test Case Generator applicatio
    - Click "New Project" → "Deploy from GitHub repo"
    - Select your repository
    - Railway auto-detects Next.js
-   - Add environment variables if needed
-   - Deploy!
+   - Deploy! (No environment variables needed - BYOK model)
 
 **Pricing**: $5 free credit/month, then pay-as-you-go (~$5-10/month for small apps)
 
@@ -108,8 +107,7 @@ This guide covers various hosting options for the Test Case Generator applicatio
      - **Build Command**: `npm install && npm run build`
      - **Start Command**: `npm start`
      - **Environment**: Node
-   - Add environment variables if needed
-   - Deploy!
+   - Deploy! (No environment variables needed - BYOK model)
 
 **Pricing**: Free tier (with limitations), paid plans start at $7/month
 
@@ -263,14 +261,9 @@ module.exports = nextConfig
 
 ### Environment Variables
 
-If you want to set default API keys (optional):
-
-1. Create `.env.local` (don't commit this!)
-2. Add to hosting platform's environment variables:
-   ```
-   OPENAI_API_KEY=your-key (optional)
-   AZURE_OPENAI_API_KEY=your-key (optional)
-   ```
+**Note**: This application uses a **Bring Your Own Key (BYOK)** model. 
+API keys are entered directly in the browser UI and stored in localStorage.
+No environment variables are needed or supported for API keys.
 
 ### Function Timeout Considerations
 
@@ -318,7 +311,7 @@ Before deploying:
 - [ ] Test locally: `npm run build && npm start`
 - [ ] Remove any hardcoded API keys
 - [ ] Update README with deployment link (optional)
-- [ ] Set environment variables on hosting platform (if needed)
+- [ ] Verify deployment works (no environment variables needed)
 - [ ] Configure custom domain (optional)
 
 ---

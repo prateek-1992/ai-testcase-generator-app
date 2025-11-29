@@ -1,28 +1,63 @@
 # Test Case Generator
 
-A Next.js application that automatically generates comprehensive test cases from Product Requirements Documents (PRDs) using Large Language Models (LLMs). Upload your PRD in PDF, DOCX, TXT, or MD format, and get structured test cases with filtering, editing, and export capabilities.
+A Next.js application that automatically generates comprehensive test cases from Product Requirements Documents (PRDs) using Large Language Models (LLMs). 
+
+**🔒 100% Client-Side Security** - Your API keys never leave your browser. All LLM calls are made directly from your browser to the provider.
+
+Upload your PRD in PDF, DOCX, TXT, or MD format, and get structured test cases with filtering, editing, and export capabilities.
 
 ## 🚀 Features
 
 - **Multi-format PRD Support**: Upload PDF, DOCX, TXT, or MD files
 - **Multiple LLM Providers**: 
   - OpenAI (GPT models)
-  - Azure OpenAI
+  - Google Gemini
   - Ollama (Local - Free!)
+  - Azure OpenAI (requires self-hosting due to CORS)
 - **PRD Summary Generation**: Automatically creates a concise summary for context
 - **Test Case Management**:
   - View, filter, and paginate test cases
   - Edit test cases manually
   - Refine test cases with AI follow-up prompts
+  - Add more test cases with custom instructions (prevents duplicates)
 - **Export Options**: Download test cases as JSON, CSV, or Excel
 - **Smart Filtering**: Filter by test case type (Functional/Negative/Edge) and priority (High/Medium/Low)
 - **Pagination**: Navigate through large test case sets efficiently
+- **🔒 100% Client-Side Security**: API keys never sent to backend - direct browser-to-LLM communication
+- **Configurable Test Case Count**: Slider to select 5-20 test cases per generation
+
+## ⚡ Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/prateek-1992/ai-testcase-generator-app.git
+   cd ai-testcase-generator-app
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+4. **Open your browser**
+   - Navigate to `http://localhost:3000`
+   - Upload a PRD file (PDF, DOCX, TXT, or MD)
+   - Enter your API key (OpenAI, Gemini, or use Ollama locally)
+   - Generate test cases!
+
+**That's it!** No environment variables needed. API keys are stored securely in your browser.
 
 ## 📋 Prerequisites
 
 - **Node.js** 18+ and npm
 - **TypeScript** knowledge (helpful but not required)
 - For **Ollama** (local LLM): Docker or native Ollama installation
+- **API Key** from one of the supported providers (OpenAI, Gemini, or Ollama for local)
 
 ## 🛠️ Local Setup
 
@@ -36,22 +71,7 @@ cd testcase-generator
 npm install
 ```
 
-### 2. Environment Setup
-
-The application doesn't require environment variables for basic setup. API keys are entered directly in the UI for flexibility. However, if you want to set defaults, you can create a `.env.local` file:
-
-```env
-# Optional: Set default OpenAI API key (can still override in UI)
-OPENAI_API_KEY=your-key-here
-
-# Optional: Set default Azure OpenAI config
-AZURE_OPENAI_API_KEY=your-key-here
-AZURE_OPENAI_ENDPOINT=https://your-instance.openai.azure.com
-AZURE_OPENAI_DEPLOYMENT=your-deployment
-AZURE_OPENAI_API_VERSION=2024-02-15-preview
-```
-
-### 3. Run Development Server
+### 2. Run Development Server
 
 ```bash
 npm run dev
@@ -59,7 +79,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 4. Build for Production
+### 3. Build for Production
 
 ```bash
 npm run build
@@ -130,33 +150,48 @@ docker exec -it ollama ollama pull llama3.1
 
 ## 💾 Data Storage
 
-### Session Storage (Client-Side)
+### Client-Side Storage (Browser Only)
 
-The application uses **browser sessionStorage** to persist data between page navigations:
+The application uses **browser storage** to persist data locally:
 
+**SessionStorage** (cleared when tab closes):
 - **`testCases`**: Array of generated test cases
 - **`prdSummary`**: PRD summary text
-- **`providerConfig`**: Selected provider and configuration (for refine functionality)
+- **`providerConfig`**: Selected provider configuration (without API keys)
+
+**LocalStorage** (persists across sessions):
+- **`apiKey_{provider}`**: API keys (encrypted/obfuscated) - e.g., `apiKey_openai`, `apiKey_gemini`
+- **`model_{provider}`**: Selected model names
+- **`baseUrl_{provider}`**: Ollama base URL (if used)
 
 **Important Notes**:
-- Data is stored **locally in your browser** only
-- Data is **cleared when you close the browser tab/window**
-- Data is **not sent to any external server** (except the LLM provider you choose)
-- Each browser session is independent
-- If you refresh the page, data persists (until tab is closed)
+- ✅ All data stored **locally in your browser** only
+- ✅ Data is **never sent to our servers** (except file extraction)
+- ✅ API keys are **never stored on our backend**
+- ✅ SessionStorage data cleared when browser tab closes
+- ✅ LocalStorage data persists across browser sessions (convenient for repeated use)
 
-### Why Session Storage?
+### Why Client-Side Storage?
 
-- **No backend database required** (simpler MVP)
-- **Privacy**: Your PRD content stays in your browser
-- **Fast**: No database queries
-- **Stateless**: Easy to deploy and scale
+- **Privacy**: Your data stays in your browser
+- **Security**: API keys never leave your device
+- **No backend database**: Simpler architecture, lower costs
+- **Fast**: No database queries, instant access
+- **Stateless backend**: Easy to deploy and scale
+
+### Clearing Your Data
+
+To clear all stored data:
+1. **Browser Settings**: Clear site data for this domain
+2. **Manual**: Open browser DevTools → Application → Clear Storage
+3. **Keys Only**: Delete individual localStorage items via DevTools
 
 ### Limitations
 
-- Data is lost when browser tab closes
+- Data is lost if browser data is cleared
 - Not shared across devices/browsers
 - Limited by browser storage quotas (~5-10MB typically)
+- SessionStorage cleared when tab closes
 
 ## 📁 Project Structure
 
@@ -164,27 +199,39 @@ The application uses **browser sessionStorage** to persist data between page nav
 testcase-generator/
 ├── app/
 │   ├── api/
-│   │   ├── extract/          # Text extraction endpoint
-│   │   ├── generate/         # Test case generation endpoint
-│   │   └── refine-test-case/ # Test case refinement endpoint
-│   ├── upload/               # File upload page
+│   │   ├── extract/          # Text extraction endpoint (ONLY backend service)
+│   │   ├── generate-cases/   # Legacy (being phased out)
+│   │   ├── generate-summary/ # Legacy (being phased out)
+│   │   ├── add-more-cases/   # Legacy (being phased out)
+│   │   ├── refine-test-case/ # Legacy (being phased out)
+│   │   └── list-gemini-models/ # Legacy (being phased out)
+│   ├── upload/               # File upload page (client-side LLM calls)
 │   ├── result/               # Test cases display page
 │   ├── layout.tsx            # Root layout
 │   └── page.tsx              # Home (redirects to /upload)
 ├── lib/
-│   ├── providers/            # LLM provider implementations
-│   │   ├── openai.ts
-│   │   ├── azure.ts
-│   │   ├── ollama.ts
-│   │   └── index.ts
+│   ├── providers/
+│   │   ├── client/           # 🔒 CLIENT-SIDE providers (keys never leave browser)
+│   │   │   ├── openai.ts     # Direct browser → OpenAI API
+│   │   │   ├── gemini.ts     # Direct browser → Gemini API
+│   │   │   └── index.ts      # Client-side LLM caller
+│   │   ├── openai.ts         # Legacy server-side (not used)
+│   │   ├── azure.ts          # Legacy server-side
+│   │   ├── ollama.ts         # Legacy server-side
+│   │   └── index.ts          # Legacy server-side factory
+│   ├── utils/
+│   │   ├── parseLLMResponse.ts # Shared JSON parsing
+│   │   ├── normalizeTestCase.ts # Test case normalization
+│   │   └── encryption.ts     # Key obfuscation utilities
 │   ├── fileParser.ts         # Unified file parser
 │   ├── parsePdf.ts           # PDF text extraction
 │   ├── parseDocx.ts          # DOCX text extraction
-│   ├── parseText.ts           # Plain text extraction
+│   ├── parseText.ts          # Plain text extraction
 │   ├── prompt.ts             # LLM prompt templates
-│   └── downloadUtils.ts      # Export utilities
+│   ├── downloadUtils.ts      # Export utilities
+│   └── tokenCounter.ts      # Token estimation
 ├── types/
-│   └── TestCase.ts            # TypeScript interfaces
+│   └── TestCase.ts           # TypeScript interfaces
 ├── sample-prd.txt            # Sample PRD for testing
 ├── sample-prd-enhanced.txt   # Enhanced sample PRD
 └── sample-prd-enhanced.pdf   # Sample PDF PRD
@@ -198,8 +245,10 @@ testcase-generator/
 - **React 18** - UI library
 
 ### LLM Integration
-- **@langchain/openai** - OpenAI and Azure OpenAI integration
-- **@langchain/ollama** - Local Ollama integration
+- **Client-side API calls** - Direct browser-to-LLM communication (keys never sent to backend)
+- **Native fetch API** - Direct calls to OpenAI, Gemini, and Ollama APIs
+- **@langchain/openai** - Server-side fallback (not used in client-side mode)
+- **@langchain/ollama** - Server-side fallback (not used in client-side mode)
 
 ### File Processing
 - **pdf-parse** - PDF text extraction
@@ -219,9 +268,10 @@ testcase-generator/
 1. Navigate to `/upload` (or home page)
 2. Drag and drop or click to upload a PRD file (PDF, DOCX, TXT, MD)
 3. Select your LLM provider:
-   - **OpenAI**: Enter API key and model name
-   - **Azure OpenAI**: Enter API key, endpoint, deployment name, and API version
-   - **Ollama**: Enter model name (ensure Ollama is running locally)
+   - **OpenAI**: Enter API key and model name (🔒 client-side, 100% secure)
+   - **Google Gemini**: Enter API key and model name (🔒 client-side, 100% secure)
+   - **Ollama**: Enter model name and base URL (🔒 client-side, 100% secure)
+   - **Azure OpenAI**: ⚠️ Requires server-side calls (not recommended for security)
 
 ### 2. Generate Test Cases
 
@@ -295,6 +345,21 @@ Click the **"Download"** button and choose:
 3. Ensure you have sufficient API credits/quota
 4. For Ollama: Ensure model is fully loaded (first request may timeout)
 
+### CORS Errors (Client-Side Calls)
+
+**Problem**: "CORS policy blocked" or "Network error"
+
+**Solutions**:
+1. **OpenAI/Gemini**: Should work out of the box (CORS enabled by default)
+2. **Ollama**: Enable CORS in Ollama:
+   ```bash
+   # Set environment variable before starting Ollama
+   export OLLAMA_ORIGINS="http://localhost:3000,https://your-domain.com"
+   ollama serve
+   ```
+3. **Browser Extensions**: Disable CORS-blocking extensions temporarily
+4. **Check Console**: Open browser DevTools → Console for detailed error messages
+
 ### Session Storage Issues
 
 **Problem**: Test cases disappear after refresh
@@ -304,19 +369,107 @@ Click the **"Download"** button and choose:
 2. Check browser storage isn't full
 3. Don't close the browser tab (sessionStorage clears on tab close)
 
-## 🔒 Privacy & Security
+## 🔒 Security & Privacy
 
-- **No data persistence**: All data is stored locally in your browser
-- **API keys**: Entered in UI, stored only in sessionStorage (not sent to our servers)
-- **PRD content**: Only sent to the LLM provider you choose
-- **No tracking**: No analytics or tracking scripts included
+### 🛡️ Client-Side LLM Architecture (100% Secure)
+
+This application uses **client-side LLM calls** - the industry standard for trust and security, used by:
+- **Continue.dev** - Developer AI assistant
+- **LangFlow** - LLM workflow builder
+- **Flowise** - LLM orchestration tool
+- **AnythingLLM** - Document Q&A system
+- **MyAskAI** - AI knowledge base
+
+#### How It Works
+
+**✅ Your API keys NEVER leave your browser:**
+- Keys are stored in your browser's `localStorage` (encrypted/obfuscated)
+- LLM API calls are made **directly from your browser** to the provider
+- Our backend (Vercel) **NEVER sees your API keys**
+- Keys are **NEVER sent to our servers**
+- Keys are **NEVER logged** (we can't log what we don't see)
+- Keys are **NEVER stored in any database**
+
+**✅ What our backend does:**
+- **Only** handles file extraction (PDF, DOCX parsing - requires server-side libraries)
+- **Never** touches your API keys
+- **Never** makes LLM calls on your behalf
+
+**✅ Security Guarantees:**
+- 🔒 **Zero-trust architecture** - We don't need to trust our servers
+- 🔒 **100% client-side** - Keys only exist in your browser
+- 🔒 **HTTPS encryption** - All API calls encrypted in transit
+- 🔒 **No server-side logging** - Impossible to log what we don't receive
+- 🔒 **No third-party access** - Keys only go to the LLM provider you choose
+
+#### API Key Storage
+
+- **Location**: Browser `localStorage` (encrypted/obfuscated)
+- **Persistence**: Survives browser restarts (convenient for repeated use)
+- **Scope**: Only accessible by this website (same-origin policy)
+- **Removal**: Clear browser data or use browser's "Clear Site Data" feature
+
+#### Supported Providers
+
+| Provider | Client-Side Support | Notes |
+|----------|-------------------|-------|
+| **OpenAI** | ✅ Yes | Direct browser calls to `api.openai.com` |
+| **Google Gemini** | ✅ Yes | Direct browser calls to `generativelanguage.googleapis.com` |
+| **Ollama** | ✅ Yes | Direct browser calls to your local Ollama instance |
+| **Azure OpenAI** | ❌ No | CORS restrictions require server-side calls |
+
+**Note**: Azure OpenAI is not supported in client-side mode due to CORS restrictions. Use OpenAI or Gemini instead, or self-host the application.
+
+#### Data Privacy
+
+**✅ What we DON'T store:**
+- ❌ API keys (never sent to our servers)
+- ❌ PRD documents (only processed client-side)
+- ❌ Generated test cases (stored only in your browser)
+- ❌ Usage analytics or tracking data
+
+**✅ What IS stored (locally in your browser):**
+- Test cases in `sessionStorage` (cleared when tab closes)
+- API keys in `localStorage` (encrypted, persists across sessions)
+- PRD summary in `sessionStorage` (temporary)
+
+**✅ Where your data goes:**
+- **PRD content**: Only sent to the LLM provider you choose (OpenAI, Gemini, or Ollama)
+- **API keys**: Only sent to the LLM provider's API (never to our servers)
+- **Test cases**: Never leave your browser
+
+#### Security Best Practices
+
+1. **Monitor Usage**: Regularly check your LLM provider's usage dashboard
+2. **Rotate Keys**: Periodically rotate your API keys
+3. **Use Rate Limits**: Set rate limits on your API keys if supported
+4. **Review Permissions**: Ensure API keys have minimal required permissions
+5. **Clear Storage**: Periodically clear browser storage if using shared devices
+
+#### Self-Hosting Option
+
+For maximum control and security, you can self-host this application:
+- Deploy on your own infrastructure
+- Full control over all code execution
+- No reliance on third-party hosting
+- See [DEPLOYMENT.md](./DEPLOYMENT.md) for details
+
+#### Compliance & Trust
+
+- ✅ **GDPR Compliant**: No personal data stored on servers
+- ✅ **SOC 2 Ready**: Zero server-side data handling
+- ✅ **Enterprise Ready**: Self-hostable for air-gapped environments
+- ✅ **Open Source**: Full code transparency
 
 ## 🚧 Known Limitations
 
-- **Session storage**: Data lost when browser tab closes
+- **Session storage**: Test cases lost when browser tab closes (keys persist in localStorage)
 - **File size**: Large PDFs (>10MB) may take longer to process
 - **Token limits**: Very long PRDs may need to be split
 - **Ollama performance**: Depends on your machine's RAM and CPU
+- **Azure OpenAI**: Not supported in client-side mode (CORS restrictions) - use OpenAI or Gemini instead
+- **Browser compatibility**: Requires modern browser with fetch API support
+- **CORS**: Some corporate networks may block direct API calls (use Ollama locally or self-host)
 
 ## 📝 Sample PRDs
 

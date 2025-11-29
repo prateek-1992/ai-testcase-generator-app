@@ -24,11 +24,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
+# local env files (not used - this app uses BYOK model, keys entered in browser UI)
 .env*.local
 .env
-# but keep .env.example
-!.env.example
+.env.example
 
 # vercel
 .vercel
