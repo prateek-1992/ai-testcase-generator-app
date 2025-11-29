@@ -628,7 +628,7 @@ export default function UploadPage() {
                         placeholder="gemini-1.5-flash-latest"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Click "Fetch Models" to see available models, or enter a model name manually
+                        Click &quot;Fetch Models&quot; to see available models, or enter a model name manually
                       </p>
                     </>
                   )}
